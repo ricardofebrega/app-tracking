@@ -23,6 +23,10 @@ DOPROB=`$SERVICE_DIR/jq -r '.do_probabilistic' config.json`
 DOSTREAM=`$SERVICE_DIR/jq -r '.do_deterministic' config.json`
 DOTENSOR=`$SERVICE_DIR/jq -r '.do_tensor' config.json`
 
+[ $DOPROB == "null" ] && DOPROB=true
+[ $DOSTREAM == "null" ] && DOSTREAM=true
+[ $DOTENSOR == "null" ] && DOTENSOR=true
+
 #TODO - validate other fields?
 if [ $LMAX == "null" ]; then
     echo "lmax is empty.. calculating max lmax to use from .bvals"
@@ -157,7 +161,7 @@ fi
 ###################################################################################################
 # tensor tracking (DT_STREAM)
 
-if [[ $DOTENSOR == "true" || $DOTENSOR == "null" ]] ; then
+if [ $DOTENSOR == "true" ] ; then
     echo "generating DT_STREAM"
     #mrtrix doc says streamtrack/DT_STREAM doesn't need grad.. but without it, it fails
     time streamtrack -quiet DT_STREAM dwi.mif output.DT_STREAM.tck -seed wm.mif -mask wm.mif -grad $BGRAD -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
@@ -187,7 +191,7 @@ fi
 
 ###################################################################################################
 # streamtrack  (SD_STREAM)
-if [[ $DOSTREAM == "true" || $DOSTREAM == "null" ]] ; then
+if [ $DOSTREAM == "true" ] ; then
     echo "generating SD_STREAM"
     time streamtrack -quiet SD_STREAM lmax.mif output.SD_STREAM.tck -seed wm.mif -mask wm.mif -grad $BGRAD -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
     ret=$?
@@ -200,7 +204,7 @@ curl -s -X POST -H "Content-Type: application/json" -d "{\"progress\": 1, \"stat
 
 ###################################################################################################
 # streamtrack  (SD_PROB)
-if [[ $DOPROB == "true" || $DOPROB == "null" ]] ; then
+if [ $DOPROB == "true" ] ; then
     echo "generating SD_PROB"
     time streamtrack -quiet SD_PROB lmax.mif output.SD_PROB.tck -seed wm.mif -mask wm.mif -grad $BGRAD -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
     ret=$?
