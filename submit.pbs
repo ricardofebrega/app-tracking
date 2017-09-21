@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l nodes=1:ppn=16:dc2
+#PBS -l nodes=1:ppn=8:dc2
 #PBS -l walltime=6:00:00
 #PBS -N tracking
 #PBS -V
@@ -13,16 +13,16 @@ if [ -z $ENV ]; then export ENV=IUHPC; fi
 [ $PBS_O_WORKDIR ] && cd $PBS_O_WORKDIR
 
 module load mrtrix/0.2.12
-module load freesurfer/6.0.0
+module load freesurfer
 module load matlab
 module load python
 
 BGRAD="grad.b"
 
 dtiinit=`$SERVICE_DIR/jq -r '.dtiinit' config.json`
-input_nii_gz=$dtiinit/`$SERVICE_DIR/jq -r '.dt6.files.alignedDwRaw' $dtiinit/product.json`
-BVALS=$dtiinit/`$SERVICE_DIR/jq -r '.dt6.files.alignedDwBvecs' $dtiinit/product.json`
-BVECS=$dtiinit/`$SERVICE_DIR/jq -r '.dt6.files.alignedDwBvals' $dtiinit/product.json`
+input_nii_gz=$dtiinit/`$SERVICE_DIR/jq -r '.files.alignedDwRaw' $dtiinit/dt6.json`
+BVALS=$dtiinit/`$SERVICE_DIR/jq -r '.files.alignedDwBvecs' $dtiinit/dt6.json`
+BVECS=$dtiinit/`$SERVICE_DIR/jq -r '.files.alignedDwBvals' $dtiinit/dt6.json`
 
 NUMFIBERS=`$SERVICE_DIR/jq -r '.fibers' config.json`
 MAXNUMFIBERSATTEMPTED=`$SERVICE_DIR/jq -r '.fibers_max' config.json`
