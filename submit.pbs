@@ -1,8 +1,14 @@
 #!/bin/bash
 #PBS -l nodes=1:ppn=16:dc2
 #PBS -l walltime=6:00:00
-#PBS -N neuro-tracking
+#PBS -N tracking
 #PBS -V
+#PBS -o stdout.$PBS_JOBID.log
+#PBS -e stderr.$PBS_JOBID.log
+
+#make it testable 
+if [ -z $SERVICE_DIR ]; then export SERVICE_DIR=`pwd`; fi
+if [ -z $ENV ]; then export ENV=IUHPC; fi
 
 [ $PBS_O_WORKDIR ] && cd $PBS_O_WORKDIR
 
@@ -13,9 +19,11 @@ module load python
 
 BGRAD="grad.b"
 
-input_nii_gz=`$SERVICE_DIR/jq -r '.dwi' config.json`
-BVALS=`$SERVICE_DIR/jq -r '.bvals' config.json`
-BVECS=`$SERVICE_DIR/jq -r '.bvecs' config.json`
+dtiinit=`$SERVICE_DIR/jq -r '.dtiinit' config.json`
+input_nii_gz=$dtiinit/`$SERVICE_DIR/jq -r '.dt6.files.alignedDwRaw' $dtiinit/product.json`
+BVALS=$dtiinit/`$SERVICE_DIR/jq -r '.dt6.files.alignedDwBvecs' $dtiinit/product.json`
+BVECS=$dtiinit/`$SERVICE_DIR/jq -r '.dt6.files.alignedDwBvals' $dtiinit/product.json`
+
 NUMFIBERS=`$SERVICE_DIR/jq -r '.fibers' config.json`
 MAXNUMFIBERSATTEMPTED=`$SERVICE_DIR/jq -r '.fibers_max' config.json`
 LMAX=`$SERVICE_DIR/jq -r '.lmax' config.json`

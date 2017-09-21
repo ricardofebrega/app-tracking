@@ -24,14 +24,15 @@ if [ -f jobid ]; then
         exit 2
     fi
     if [ $jobstate == "Q" ]; then
-        eststart=`showstart $jobid | grep start`
         echo "Waiting in the queue - $eststart"
-        #curl -s -X POST -H "Content-Type: application/json" -d "{\"msg\":\"Waiting in the PBS queue : $eststart\"}" $PROGRESS_URL > /dev/null
-        exit 0 #running!
+        eststart=`showstart $jobid | grep start`
+        exit 0
     fi
     if [ $jobstate == "R" ]; then
-        tail -1 neuro-tracking.o*
-        exit 0 #running!
+        subid=$(cat jobid | cut -d '.' -f 1)
+        logname="stdout.$subid.*.log"
+        tail -1 $logname
+        exit 0
     fi
 
     if [ $jobstate == "H" ]; then
