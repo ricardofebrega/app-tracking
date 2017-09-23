@@ -1,0 +1,6 @@
+{
+    "dtiinit":  "/N/u/hayashis/Karst/testdata/108323/dtiinit/.",
+    "freesurfer": "/N/u/hayashis/Karst/testdata/108323/freesurfer/output",
+    "fibers": 500000,
+    "fibers_max": 1000000
+}
