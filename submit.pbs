@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -l nodes=1:ppn=8:dc2
-#PBS -l walltime=8:00:00
+#PBS -l walltime=12:00:00
 #PBS -N tracking
 #PBS -V
 #PBS -o stdout.$PBS_JOBID.log
