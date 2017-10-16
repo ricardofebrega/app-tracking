@@ -188,7 +188,7 @@ if [ -f $outfile ]; then
     echo "$outfile already exist... skipping"
 else
     echo "computing lmax"
-    time csdeconv dwi.mif -grad $BGRAD response.txt -lmax $LMAX -mask brainmask.mif $outfile
+    time csdeconv -quiet dwi.mif -grad $BGRAD response.txt -lmax $LMAX -mask brainmask.mif $outfile
     ret=$?
     if [ ! $ret -eq 0 ]; then
         #curl -s -X POST -H "Content-Type: application/json" -d "{\"status\": \"failed\"}" ${SCA_PROGRESS_URL}.lmax > /dev/null
