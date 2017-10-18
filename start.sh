@@ -12,7 +12,7 @@ rm -f finished
 
 # TODO - handle a case where this file already exists
 if [ ! -e $HOME/.mrtrix.conf ]; then
-    echo "NumberOfThreads: 16" > $HOME/.mrtrix.conf
+    echo "NumberOfThreads: 8" > $HOME/.mrtrix.conf
 fi
 
 OPTS=""
