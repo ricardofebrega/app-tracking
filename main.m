@@ -1,18 +1,18 @@
 function [] = main()
 
-if isempty(getenv('SCA_SERVICE_DIR'))
-    disp('setting SCA_SERVICE_DIR to pwd')
-    setenv('SCA_SERVICE_DIR', pwd)
+switch getenv('ENV')
+case 'IUHPC'
+        disp('loading paths (HPC)')
+        addpath(genpath('/N/u/brlife/git/vistasoft'))
+        addpath(genpath('/N/u/brlife/git/jsonlab'))
 end
-
-disp('loading paths')
-%addpath(genpath('/N/u/hayashis/BigRed2/git/encode')) %not used?
-addpath(genpath('/N/u/hayashis/BigRed2/git/vistasoft'))
-addpath(genpath('/N/u/hayashis/BigRed2/git/jsonlab'))
-
+    
 % load my own config.json
 config = loadjson('config.json');
+dt6config = loadjson(fullfile(config.dtiinit, '/dt6.json'));
+    
+%% Create an MRTRIX .b file from the bvals/bvecs of the shell chosen to run
+mrtrix_bfileFromBvecs(fullfile(config.dtiinit,dt6config.files.alignedDwBvecs), fullfile(config.dtiinit,dt6config.files.alignedDwBvals), 'grad.b');
+
 [ out ] = make_wm_mask(config);
 
-% Save output
-% No save out put in this main file the file is saved inside make_wm_mask

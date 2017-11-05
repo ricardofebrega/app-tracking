@@ -7,3 +7,4 @@ rm grad.b
 rm *.tck
 rm wm.nii.gz
 rm *.mat
+rm *.log

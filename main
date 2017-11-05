@@ -3,11 +3,8 @@
 #PBS -l walltime=12:00:00
 #PBS -N tracking
 #PBS -V
-#PBS -o stdout.$PBS_JOBID.log
-#PBS -e stderr.$PBS_JOBID.log
 
 #make it testable 
-if [ -z $SERVICE_DIR ]; then export SERVICE_DIR=`pwd`; fi
 if [ -z $ENV ]; then export ENV=IUHPC; fi
 
 [ $PBS_O_WORKDIR ] && cd $PBS_O_WORKDIR
@@ -19,17 +16,17 @@ module load python
 
 BGRAD="grad.b"
 
-dtiinit=`$SERVICE_DIR/jq -r '.dtiinit' config.json`
-input_nii_gz=$dtiinit/`$SERVICE_DIR/jq -r '.files.alignedDwRaw' $dtiinit/dt6.json`
-BVALS=$dtiinit/`$SERVICE_DIR/jq -r '.files.alignedDwBvecs' $dtiinit/dt6.json`
-BVECS=$dtiinit/`$SERVICE_DIR/jq -r '.files.alignedDwBvals' $dtiinit/dt6.json`
+dtiinit=`./jq -r '.dtiinit' config.json`
+input_nii_gz=$dtiinit/`./jq -r '.files.alignedDwRaw' $dtiinit/dt6.json`
+BVALS=$dtiinit/`./jq -r '.files.alignedDwBvecs' $dtiinit/dt6.json`
+BVECS=$dtiinit/`./jq -r '.files.alignedDwBvals' $dtiinit/dt6.json`
 
-NUMFIBERS=`$SERVICE_DIR/jq -r '.fibers' config.json`
-MAXNUMFIBERSATTEMPTED=`$SERVICE_DIR/jq -r '.fibers_max' config.json`
-LMAX=`$SERVICE_DIR/jq -r '.lmax' config.json`
-DOPROB=`$SERVICE_DIR/jq -r '.do_probabilistic' config.json`
-DOSTREAM=`$SERVICE_DIR/jq -r '.do_deterministic' config.json`
-DOTENSOR=`$SERVICE_DIR/jq -r '.do_tensor' config.json`
+NUMFIBERS=`./jq -r '.fibers' config.json`
+MAXNUMFIBERSATTEMPTED=`./jq -r '.fibers_max' config.json`
+LMAX=`./jq -r '.lmax' config.json`
+DOPROB=`./jq -r '.do_probabilistic' config.json`
+DOSTREAM=`./jq -r '.do_deterministic' config.json`
+DOTENSOR=`./jq -r '.do_tensor' config.json`
 
 [ $DOPROB == "null" ] && DOPROB=true
 [ $DOSTREAM == "null" ] && DOSTREAM=true
@@ -38,52 +35,31 @@ DOTENSOR=`$SERVICE_DIR/jq -r '.do_tensor' config.json`
 #TODO - validate other fields?
 if [ $LMAX == "null" ]; then
     echo "lmax is empty.. calculating max lmax to use from .bvals"
-	LMAX=$(python $SERVICE_DIR/calculatelmax.py)
+	LMAX=$(python calculatelmax.py)
 fi
+
 echo "Using LMAX: $LMAX"
 
-echo "input_nii_gz:$input_nii_gz"
-echo "BGRAD:$BGRAD"
+#export MATLABPATH=$MATLABPATH:`pwd`
+if [ -f grad.b ] && [ -f wm.nii.gz ]; then
+        echo "grad.b and wm.nii.gz exist... skipping"
+else
+        echo "starting matlab to create grad.b & wm.nii.gz"
+        time matlab -nodisplay -nosplash -r main
+fi
 
-###################################################################################################
-#
-# convert .bvals .bvecs into a single .b
-#
-# sample .bvals
-# 2000 2001 2002 2003 2004
-# sample .bvecs
-# 1 4 7 10 13
-# 2 5 8 11 14
-# 3 6 9 12 15
-# sample output grad.b
-# 1 2 3 2000
-# 4 5 6 2001
-# 7 8 9 2002
-# 10 11 12 2003
-# 13 14 15 2003
-
-## transpose output w/ original at the top
-cat $BVECS $BVALS | tr ',' ' ' | awk '
-{ 
-   for (i=1; i<=NF; i++)  {
-       a[NR,i] = $i
-   }
-}
-NF>p { p = NF }
-END {    
-   for(j=1; j<=p; j++) {
-       str=a[1,j]
-       for(i=2; i<=NR; i++){
-           str=str" "a[i,j];
-       }
-       print str
-   }
-}' > $BGRAD
-#
-###################################################################################################
-
-###################################################################################################
-# This could be moved out of here and processed by a dedicated preprocessing (mrconvert) service 
+echo "converting wm.nii.gz to wm.mif"
+if [ -f wm.mif ]; then
+    echo "wm.mif already exist... skipping"
+else
+    time mrconvert --quiet wm.nii.gz wm.mif
+    ret=$?
+    if [ ! $ret -eq 0 ]; then
+        echo "failed to mrconver wm.nii.gz to wm.mif"
+        echo $ret > finished
+        exit $ret
+    fi
+fi
 
 echo "converting dwi input to mif (should take a few minutes)"
 if [ -f dwi.mif ]; then
@@ -145,7 +121,7 @@ echo "estimate response function"
 if [ -f response.txt ]; then
     echo "response.txt already exist... skipping"
 else
-    time estimate_response -quiet dwi.mif sf.mif -lmax 6 -grad $BGRAD response.txt
+    time estimate_response -quiet dwi.mif sf.mif -grad $BGRAD response.txt
     ret=$?
     if [ ! $ret -eq 0 ]; then
         echo $ret > finished
@@ -153,18 +129,6 @@ else
     fi
 fi
 
-###################################################################################################
-
-# Generate white matter mask (wm.mii.gz) from t1(freesurfer output [mri/aseg.mgz]) used by tracking later 
-export MATLABPATH=$MATLABPATH:$SERVICE_DIR
-time matlab -nodisplay -nosplash -r main
-
-echo "converting wm.nii.gz to wm.mif"
-if [ -f wm.mif ]; then
-    echo "wm.mif already exist... skipping"
-else
-    time mrconvert --quiet wm.nii.gz wm.mif
-fi
 
 ###################################################################################################
 # tensor tracking (DT_STREAM)
@@ -225,19 +189,6 @@ fi
 curl -s -X POST -H "Content-Type: application/json" -d "{\"progress\": 1, \"status\": \"finished\"}" $progress_url > /dev/null
 
 ###################################################################################################
-
-#module load matlab
-#export MATLABPATH=$MATLABPATH:$SERVICE_DIR
-#matlab -nodisplay -nosplash -r tck2mat
-#if [ -f output.DT_STREAM.mat ] && [ -f output.SD_STREAM.mat ] && [ -f output.SD_PROB.mat ];
-#then 
-#   echo "all done"
-#   echo 0 > finished
-#else 
-#   echo ".mat files missing"
-#   echo 1 > finished
-#   exit 1
-#fi
 
 echo "all done"
 echo 0 > finished
