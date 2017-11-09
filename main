@@ -1,4 +1,5 @@
 #!/bin/bash
+
 #PBS -l nodes=1:ppn=8:dc2
 #PBS -l walltime=12:00:00
 #PBS -N tracking
@@ -189,6 +190,13 @@ fi
 curl -s -X POST -H "Content-Type: application/json" -d "{\"progress\": 1, \"status\": \"finished\"}" $progress_url > /dev/null
 
 ###################################################################################################
+# convert various mif files to .nii.gz to generate neuro/dwi/recon (Diffusion Signal Voxel Reconstruction Model) data product
+#response.txt > same
+mrconvert lmax.mif csd.nii.gz
+mrconvert fa.mif fa.nii.gz
+mrconvert dt.mif dt.nii.gz
+mrconvert wm.mif whitematter.nii.gz
+mrconvert brainmask.mif brainmask.nii.gz
 
 echo "all done"
 echo 0 > finished
