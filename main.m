@@ -1,7 +1,6 @@
 function [] = main()
 
-switch getenv('ENV')
-case 'IUHPC'
+if ~isdeployed
         disp('loading paths (HPC)')
         addpath(genpath('/N/u/brlife/git/vistasoft'))
         addpath(genpath('/N/u/brlife/git/jsonlab'))

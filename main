@@ -192,6 +192,7 @@ curl -s -X POST -H "Content-Type: application/json" -d "{\"progress\": 1, \"stat
 ###################################################################################################
 # convert various mif files to .nii.gz to generate neuro/dwi/recon (Diffusion Signal Voxel Reconstruction Model) data product
 #response.txt > same
+echo "creating neuro/dwi/recon datatype"
 mrconvert lmax.mif csd.nii.gz
 mrconvert fa.mif fa.nii.gz
 mrconvert dt.mif dt.nii.gz
