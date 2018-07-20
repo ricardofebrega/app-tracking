@@ -5,9 +5,6 @@
 #PBS -N tracking
 #PBS -V
 
-#make it testable 
-if [ -z $ENV ]; then export ENV=IUHPC; fi
-
 [ $PBS_O_WORKDIR ] && cd $PBS_O_WORKDIR
 
 module load mrtrix/0.2.12
@@ -41,12 +38,34 @@ fi
 
 echo "Using LMAX: $LMAX"
 
-#export MATLABPATH=$MATLABPATH:`pwd`
-if [ -f grad.b ] && [ -f wm.nii.gz ]; then
-        echo "grad.b and wm.nii.gz exist... skipping"
-else
-        echo "starting matlab to create grad.b & wm.nii.gz"
-        time matlab -nodisplay -nosplash -r main
+#generate grad.b from bvecs/bvals
+dtiinit=`jq -r '.dtiinit' config.json`
+export input_nii_gz=$dtiinit/`jq -r '.files.alignedDwRaw' $dtiinit/dt6.json`
+export BVECS=$dtiinit/`jq -r '.files.alignedDwBvecs' $dtiinit/dt6.json`
+export BVALS=$dtiinit/`jq -r '.files.alignedDwBvals' $dtiinit/dt6.json`
+
+#load bvals/bvecs
+bvals=$(cat $BVALS)
+bvecs_x=$(cat $BVECS | head -1)
+bvecs_y=$(cat $BVECS | head -2 | tail -1)
+bvecs_z=$(cat $BVECS | tail -1)
+
+#convert strings to array of numbers
+bvecs_x=($bvecs_x)
+bvecs_y=($bvecs_y)
+bvecs_z=($bvecs_z)
+
+#output grad.b
+i=0
+true > grad.b
+for bval in $bvals; do
+    echo ${bvecs_x[$i]} ${bvecs_y[$i]} ${bvecs_z[$i]} $bval >> grad.b
+    i=$((i+1))
+done
+
+if [ ! -f wm.nii.gz ]; then
+        echo "starting matlab to create wm.nii.gz"
+        time matlab -nodisplay -nosplash -r make_wm_mask
 fi
 
 echo "converting wm.nii.gz to wm.mif"

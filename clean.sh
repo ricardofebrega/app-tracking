@@ -8,3 +8,6 @@ rm *.tck
 rm wm.nii.gz
 rm *.mat
 rm *.log
+rm *.nii.gz
+rm *.err
+rm _main

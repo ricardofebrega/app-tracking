@@ -1,4 +1,13 @@
-function out = make_wm_mask( config )
+function out = make_wm_mask()
+
+if ~isdeployed
+    disp('loading paths (HPC)')
+    addpath(genpath('/N/u/brlife/git/vistasoft'))
+    addpath(genpath('/N/u/brlife/git/jsonlab'))
+end
+    
+% load my own config.json
+config = loadjson('config.json');
 %
 % out = make_wm_mask( config )
 %
