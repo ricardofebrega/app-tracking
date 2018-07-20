@@ -14,17 +14,17 @@ module load python
 
 BGRAD="grad.b"
 
-dtiinit=`./jq -r '.dtiinit' config.json`
-input_nii_gz=$dtiinit/`./jq -r '.files.alignedDwRaw' $dtiinit/dt6.json`
-BVALS=$dtiinit/`./jq -r '.files.alignedDwBvecs' $dtiinit/dt6.json`
-BVECS=$dtiinit/`./jq -r '.files.alignedDwBvals' $dtiinit/dt6.json`
+dtiinit=`jq -r '.dtiinit' config.json`
+input_nii_gz=$dtiinit/`jq -r '.files.alignedDwRaw' $dtiinit/dt6.json`
+BVALS=$dtiinit/`jq -r '.files.alignedDwBvecs' $dtiinit/dt6.json`
+BVECS=$dtiinit/`jq -r '.files.alignedDwBvals' $dtiinit/dt6.json`
 
-NUMFIBERS=`./jq -r '.fibers' config.json`
-MAXNUMFIBERSATTEMPTED=`./jq -r '.fibers_max' config.json`
-LMAX=`./jq -r '.lmax' config.json`
-DOPROB=`./jq -r '.do_probabilistic' config.json`
-DOSTREAM=`./jq -r '.do_deterministic' config.json`
-DOTENSOR=`./jq -r '.do_tensor' config.json`
+NUMFIBERS=`jq -r '.fibers' config.json`
+MAXNUMFIBERSATTEMPTED=`jq -r '.fibers_max' config.json`
+LMAX=`jq -r '.lmax' config.json`
+DOPROB=`jq -r '.do_probabilistic' config.json`
+DOSTREAM=`jq -r '.do_deterministic' config.json`
+DOTENSOR=`jq -r '.do_tensor' config.json`
 
 [ $DOPROB == "null" ] && DOPROB=true
 [ $DOSTREAM == "null" ] && DOSTREAM=true
