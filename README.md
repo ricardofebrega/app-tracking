@@ -29,7 +29,10 @@ You can submit this App online at [https://doi.org/10.25663/bl.app.47](https://d
 
 ```json
 {
-TO BE ADDED
+    "dtiinit":  "/path/to/dtiinit/.",
+    "freesurfer": "/path/to/freesurfer/output",
+    "fibers": 500000,
+    "fibers_max": 1000000
 }
 ```
 
