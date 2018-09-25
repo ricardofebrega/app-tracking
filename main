@@ -14,10 +14,23 @@ module load python
 
 BGRAD="grad.b"
 
+#dtiinit=`jq -r '.dtiinit' config.json`
+#export input_nii_gz=$dtiinit/`jq -r '.files.alignedDwRaw' $dtiinit/dt6.json`
+#export BVALS=$dtiinit/`jq -r '.files.alignedDwBvecs' $dtiinit/dt6.json`
+#export BVECS=$dtiinit/`jq -r '.files.alignedDwBvals' $dtiinit/dt6.json`
+
+dwi=`jq -r '.dwi' config.json`
+if [ $dwi != "null" ]; then
+    export input_nii_gz=$dwi
+    export BVECS=`jq -r '.bvecs' config.json`
+    export BVALS=`jq -r '.bvals' config.json`
+fi
 dtiinit=`jq -r '.dtiinit' config.json`
-input_nii_gz=$dtiinit/`jq -r '.files.alignedDwRaw' $dtiinit/dt6.json`
-BVALS=$dtiinit/`jq -r '.files.alignedDwBvecs' $dtiinit/dt6.json`
-BVECS=$dtiinit/`jq -r '.files.alignedDwBvals' $dtiinit/dt6.json`
+if [ $dtiinit != "null" ]; then
+    export input_nii_gz=$dtiinit/`jq -r '.files.alignedDwRaw' $dtiinit/dt6.json`
+    export BVECS=$dtiinit/`jq -r '.files.alignedDwBvecs' $dtiinit/dt6.json`
+    export BVALS=$dtiinit/`jq -r '.files.alignedDwBvals' $dtiinit/dt6.json`
+fi
 
 NUMFIBERS=`jq -r '.fibers' config.json`
 MAXNUMFIBERSATTEMPTED=`jq -r '.fibers_max' config.json`
@@ -31,18 +44,11 @@ DOTENSOR=`jq -r '.do_tensor' config.json`
 [ $DOTENSOR == "null" ] && DOTENSOR=true
 
 #TODO - validate other fields?
-if [ $LMAX == "null" ]; then
-    echo "lmax is empty.. calculating max lmax to use from .bvals"
-	LMAX=$(python calculatelmax.py)
+if [[ $LMAX == "null" || -z $LMAX ]]; then
+    echo "lmax is empty.. calculating max lmax to use from $BVALS"
+	LMAX=`./calculatelmax.py $BVALS`
 fi
-
 echo "Using LMAX: $LMAX"
-
-#generate grad.b from bvecs/bvals
-dtiinit=`jq -r '.dtiinit' config.json`
-export input_nii_gz=$dtiinit/`jq -r '.files.alignedDwRaw' $dtiinit/dt6.json`
-export BVECS=$dtiinit/`jq -r '.files.alignedDwBvecs' $dtiinit/dt6.json`
-export BVALS=$dtiinit/`jq -r '.files.alignedDwBvals' $dtiinit/dt6.json`
 
 #load bvals/bvecs
 bvals=$(cat $BVALS)

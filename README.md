@@ -2,6 +2,7 @@
 [![Run on Brainlife.io](https://img.shields.io/badge/Brainlife-bl.app.1-blue.svg)](https://doi.org/10.25663/bl.app.1)
 
 # app-tracking
+
 This service runs mrtrix tracking using SD_PROB, SD_STREAM, and DT_STREAM algorithms. It generates 3 separate track output for each algorithms.
 
 ### Authors
@@ -20,7 +21,12 @@ This service runs mrtrix tracking using SD_PROB, SD_STREAM, and DT_STREAM algori
 
 ### On Brainlife.io
 
-You can submit this App online at [https://doi.org/10.25663/bl.app.47](https://doi.org/10.25663/bl.app.47) via the "Execute" tab.
+You can submit this App online at ..
+
+* For dtiinit input [https://doi.org/10.25663/bl.app.47](https://doi.org/10.25663/bl.app.47)
+* For dwi input [https://doi.org/10.25663/bl.app.47](https://doi.org/10.25663/bl.app.47) 
+
+via the "Execute" tab.
 
 ### Running Locally (on your machine)
 
@@ -50,8 +56,8 @@ If you don't have your own input file, you can download sample datasets from Bra
 npm install -g brainlife
 bl login
 mkdir input
-bl dataset download <ADD> && mv <ADD> input/track
-bl dataset download <ADD> && mv <ADD> input/dtiinit
+bl dataset download 5a050a00eec2b300611abff3 && mv 5a050a00eec2b300611abff3 input/dwi
+bl dataset download 5a065cc75ab38300be518f51 && mv 5a065cc75ab38300be518f51 input/freesurfer
 ```
 
 ## Output
