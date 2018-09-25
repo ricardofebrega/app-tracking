@@ -12,8 +12,6 @@ module load freesurfer
 module load matlab
 module load python
 
-BGRAD="grad.b"
-
 #dtiinit=`jq -r '.dtiinit' config.json`
 #export input_nii_gz=$dtiinit/`jq -r '.files.alignedDwRaw' $dtiinit/dt6.json`
 #export BVALS=$dtiinit/`jq -r '.files.alignedDwBvecs' $dtiinit/dt6.json`
@@ -51,10 +49,10 @@ fi
 echo "Using LMAX: $LMAX"
 
 #load bvals/bvecs
-bvals=$(cat $BVALS)
-bvecs_x=$(cat $BVECS | head -1)
-bvecs_y=$(cat $BVECS | head -2 | tail -1)
-bvecs_z=$(cat $BVECS | tail -1)
+bvals=$(cat $BVALS | tr ',' ' ')
+bvecs_x=$(cat $BVECS | tr ',' ' ' | head -1)
+bvecs_y=$(cat $BVECS | tr ',' ' ' | head -2 | tail -1)
+bvecs_z=$(cat $BVECS | tr ',' ' ' | tail -1)
 
 #convert strings to array of numbers
 bvecs_x=($bvecs_x)
@@ -119,7 +117,7 @@ echo "dwi2tensor"
 if [ -f dt.mif ]; then
     echo "dt.mif already exist... skipping"
 else
-    time dwi2tensor -quiet dwi.mif -grad $BGRAD dt.mif 
+    time dwi2tensor -quiet dwi.mif -grad grad.b dt.mif 
 fi
 
 echo "tensor2FA"
@@ -147,7 +145,7 @@ echo "estimate response function"
 if [ -f response.txt ]; then
     echo "response.txt already exist... skipping"
 else
-    time estimate_response -quiet dwi.mif sf.mif -grad $BGRAD response.txt
+    time estimate_response -quiet dwi.mif sf.mif -grad grad.b response.txt
     ret=$?
     if [ ! $ret -eq 0 ]; then
         echo $ret > finished
@@ -162,7 +160,7 @@ fi
 if [ $DOTENSOR == "true" ] ; then
     echo "generating DT_STREAM"
     #mrtrix doc says streamtrack/DT_STREAM doesn't need grad.. but without it, it fails
-    time streamtrack -quiet DT_STREAM dwi.mif output.DT_STREAM.tck -seed wm.mif -mask wm.mif -grad $BGRAD -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
+    time streamtrack -quiet DT_STREAM dwi.mif output.DT_STREAM.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
     ret=$?
     if [ ! $ret -eq 0 ]; then
         echo $ret > finished
@@ -178,7 +176,7 @@ if [ -f $outfile ]; then
     echo "$outfile already exist... skipping"
 else
     echo "computing lmax"
-    time csdeconv -quiet dwi.mif -grad $BGRAD response.txt -lmax $LMAX -mask brainmask.mif $outfile
+    time csdeconv -quiet dwi.mif -grad grad.b response.txt -lmax $LMAX -mask brainmask.mif $outfile
     ret=$?
     if [ ! $ret -eq 0 ]; then
         #curl -s -X POST -H "Content-Type: application/json" -d "{\"status\": \"failed\"}" ${SCA_PROGRESS_URL}.lmax > /dev/null
@@ -191,7 +189,7 @@ fi
 # streamtrack  (SD_STREAM)
 if [ $DOSTREAM == "true" ] ; then
     echo "generating SD_STREAM"
-    time streamtrack -quiet SD_STREAM lmax.mif output.SD_STREAM.tck -seed wm.mif -mask wm.mif -grad $BGRAD -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
+    time streamtrack -quiet SD_STREAM lmax.mif output.SD_STREAM.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
     ret=$?
     if [ ! $ret -eq 0 ]; then
         echo $ret > finished
@@ -204,7 +202,7 @@ curl -s -X POST -H "Content-Type: application/json" -d "{\"progress\": 1, \"stat
 # streamtrack  (SD_PROB)
 if [ $DOPROB == "true" ] ; then
     echo "generating SD_PROB"
-    time streamtrack -quiet SD_PROB lmax.mif output.SD_PROB.tck -seed wm.mif -mask wm.mif -grad $BGRAD -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
+    time streamtrack -quiet SD_PROB lmax.mif output.SD_PROB.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
     ret=$?
     if [ ! $ret -eq 0 ]; then
         curl -s -X POST -H "Content-Type: application/json" -d "{\"status\": \"failed\"}" $progress_url > /dev/null
