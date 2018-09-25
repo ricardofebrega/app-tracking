@@ -1,5 +1,5 @@
 [![Abcdspec-compliant](https://img.shields.io/badge/ABCD_Spec-v1.1-green.svg)](https://github.com/brain-life/abcd-spec)
-[![Run on Brainlife.io](https://img.shields.io/badge/Brainlife-bl.app.1-blue.svg)](https://doi.org/10.25663/bl.app.1)
+[![Run on Brainlife.io](https://img.shields.io/badge/Brainlife-bl.app.105-blue.svg)](https://doi.org/10.25663/bl.app.105)
 
 # app-tracking
 
@@ -23,8 +23,8 @@ This service runs mrtrix tracking using SD_PROB, SD_STREAM, and DT_STREAM algori
 
 You can submit this App online at ..
 
-* For dtiinit input [https://doi.org/10.25663/bl.app.47](https://doi.org/10.25663/bl.app.47)
-* For dwi input [https://doi.org/10.25663/bl.app.47](https://doi.org/10.25663/bl.app.47) 
+* For dtiinit input [https://doi.org/10.25663/bl.app.59](https://doi.org/10.25663/bl.app.59)
+* For dwi input [https://doi.org/10.25663/bl.app.105](https://doi.org/10.25663/bl.app.105) 
 
 via the "Execute" tab.
 
@@ -35,7 +35,9 @@ via the "Execute" tab.
 
 ```json
 {
-    "dtiinit":  "/path/to/dtiinit/.",
+    "dwi":  "/path/to/dwi/dwi.nii.gz",
+    "bvals":  "/path/to/dwi/dwi.bvals",
+    "bvecs":  "/path/to/dwi/dwi.bvecs",
     "freesurfer": "/path/to/freesurfer/output",
     "fibers": 500000,
     "fibers_max": 1000000
