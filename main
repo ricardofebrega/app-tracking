@@ -132,49 +132,62 @@ track_info output.DT_STREAM.tck | ./info2json.py > DT_STREAM.json
 echo "writing product.json"
 cat << EOF > product.json
 {
-    "meta": {
-        "dt_stream": {
-            "qform": $(jq .qform forms.json),
-            "sform": $(jq .sform forms.json),
-            "TractographyClass": "local",
-            "TractographyMethod": "deterministic",
-            "StepSizeUnits": "mm",
-            "StepSize": $(jq -r .step_size DT_STREAM.json),
-            "AngleCurvature": $(jq -r .min_curv DT_STREAM.json),
-            "SeedingMethod": "globalSeedNumber",
-            "SeedingNumberMethod": "totalStreamlinesNumber",
-            "TerminationCriterion": "leaveMask",
-            "TerminationCriterionTest": "binary"
+    "brainlife": [
+        {
+            "type": "dataset",
+            "id": "dt_stream",
+            "meta": {
+                "qform": $(jq .qform forms.json),
+                "sform": $(jq .sform forms.json),
+                "TractographyClass": "local",
+                "TractographyMethod": "deterministic",
+                "StepSizeUnits": "mm",
+                "StepSize": $(jq -r .step_size DT_STREAM.json),
+                "AngleCurvature": $(jq -r .min_curv DT_STREAM.json),
+                "SeedingMethod": "globalSeedNumber",
+                "SeedingNumberMethod": "totalStreamlinesNumber",
+                "TerminationCriterion": "leaveMask",
+                "TerminationCriterionTest": "binary"
+            }
         },
 
-        "sd_stream": {
-            "qform": $(jq .qform forms.json),
-            "sform": $(jq .sform forms.json),
-            "TractographyClass": "local",
-            "TractographyMethod": "deterministic",
-            "StepSizeUnits": "mm",
-            "StepSize": $(jq -r .step_size SD_STREAM.json),
-            "AngleCurvature": $(jq -r .min_curv SD_STREAM.json),
-            "SeedingMethod": "globalSeedNumber",
-            "SeedingNumberMethod": "totalStreamlinesNumber",
-            "TerminationCriterion": "leaveMask",
-            "TerminationCriterionTest": "binary"
+        {
+            "type": "dataset",
+            "id": "sd_stream",
+            "meta": {
+                "qform": $(jq .qform forms.json),
+                "sform": $(jq .sform forms.json),
+                "TractographyClass": "local",
+                "TractographyMethod": "deterministic",
+                "StepSizeUnits": "mm",
+                "StepSize": $(jq -r .step_size SD_STREAM.json),
+                "AngleCurvature": $(jq -r .min_curv SD_STREAM.json),
+                "SeedingMethod": "globalSeedNumber",
+                "SeedingNumberMethod": "totalStreamlinesNumber",
+                "TerminationCriterion": "leaveMask",
+                "TerminationCriterionTest": "binary"
+            }
         },
 
-        "sd_prob": {
-            "qform": $(jq .qform forms.json),
-            "sform": $(jq .sform forms.json),
-            "TractographyClass": "local",
-            "TractographyMethod": "probabilistic",
-            "StepSizeUnits": "mm",
-            "StepSize": $(jq -r .step_size SD_PROB.json),
-            "AngleCurvature": $(jq -r .min_curv SD_PROB.json),
-            "SeedingMethod": "globalSeedNumber",
-            "SeedingNumberMethod": "totalStreamlinesNumber",
-            "TerminationCriterion": "leaveMask",
-            "TerminationCriterionTest": "binary"
+        {
+            "type": "dataset",
+            "id": "sd_prob",
+            "meta": {
+                "qform": $(jq .qform forms.json),
+                "sform": $(jq .sform forms.json),
+                "TractographyClass": "local",
+                "TractographyMethod": "probabilistic",
+                "StepSizeUnits": "mm",
+                "StepSize": $(jq -r .step_size SD_PROB.json),
+                "AngleCurvature": $(jq -r .min_curv SD_PROB.json),
+                "SeedingMethod": "globalSeedNumber",
+                "SeedingNumberMethod": "totalStreamlinesNumber",
+                "TerminationCriterion": "leaveMask",
+                "TerminationCriterionTest": "binary"
+            }
         }
-    }, 
+    ],
+
     "track_info": {
         "dt_stream": $(jq . DT_STREAM.json),
         "sd_stream": $(jq . SD_STREAM.json),
