@@ -1,5 +1,4 @@
 rm neuro-tracking.*
-rm finished
 rm jobid
 rm response.txt
 rm *.mif

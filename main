@@ -5,17 +5,13 @@
 #PBS -N tracking
 #PBS -V
 
-[ $PBS_O_WORKDIR ] && cd $PBS_O_WORKDIR
-
 module load mrtrix/0.2.12
 module load freesurfer
 module load matlab
 module load python
 
-#dtiinit=`jq -r '.dtiinit' config.json`
-#export input_nii_gz=$dtiinit/`jq -r '.files.alignedDwRaw' $dtiinit/dt6.json`
-#export BVALS=$dtiinit/`jq -r '.files.alignedDwBvecs' $dtiinit/dt6.json`
-#export BVECS=$dtiinit/`jq -r '.files.alignedDwBvals' $dtiinit/dt6.json`
+set -x
+set -e
 
 dwi=`jq -r '.dwi' config.json`
 if [ $dwi != "null" ]; then
@@ -33,13 +29,6 @@ fi
 NUMFIBERS=`jq -r '.fibers' config.json`
 MAXNUMFIBERSATTEMPTED=`jq -r '.fibers_max' config.json`
 LMAX=`jq -r '.lmax' config.json`
-DOPROB=`jq -r '.do_probabilistic' config.json`
-DOSTREAM=`jq -r '.do_deterministic' config.json`
-DOTENSOR=`jq -r '.do_tensor' config.json`
-
-[ $DOPROB == "null" ] && DOPROB=true
-[ $DOSTREAM == "null" ] && DOSTREAM=true
-[ $DOTENSOR == "null" ] && DOTENSOR=true
 
 #TODO - validate other fields?
 if [[ $LMAX == "null" || -z $LMAX ]]; then
@@ -67,154 +56,66 @@ for bval in $bvals; do
     i=$((i+1))
 done
 
+echo "starting matlab to create wm.nii.gz"
 if [ ! -f wm.nii.gz ]; then
-        echo "starting matlab to create wm.nii.gz"
-        time matlab -nodisplay -nosplash -r make_wm_mask
+    time matlab -nodisplay -nosplash -r make_wm_mask
 fi
 
 echo "converting wm.nii.gz to wm.mif"
-if [ -f wm.mif ]; then
-    echo "wm.mif already exist... skipping"
-else
+if [ ! -f wm.mif ]; then
     time mrconvert --quiet wm.nii.gz wm.mif
-    ret=$?
-    if [ ! $ret -eq 0 ]; then
-        echo "failed to mrconver wm.nii.gz to wm.mif"
-        echo $ret > finished
-        exit $ret
-    fi
 fi
 
 echo "converting dwi input to mif (should take a few minutes)"
-if [ -f dwi.mif ]; then
-    echo "dwi.mif already exist... skipping"
-else
+if [ ! -f dwi.mif ]; then
     time mrconvert --quiet $input_nii_gz dwi.mif
-    ret=$?
-    if [ ! $ret -eq 0 ]; then
-        echo $ret > finished
-        exit $ret
-    fi
 fi
 
 ###################################################################################################
 
 echo "make brainmask from dwi data (about 18 minutes)"
-if [ -f brainmask.mif ]; then
-    echo "brainmask.mif already exist... skipping"
-else
+if [ ! -f brainmask.mif ]; then
     time average -quiet dwi.mif -axis 3 - | threshold -quiet - - | median3D -quiet - - | median3D -quiet - brainmask.mif
-    ret=$?
-    if [ ! $ret -eq 0 ]; then
-        echo $ret > finished
-        exit $ret
-    fi
 fi
 
 ###################################################################################################
 
 echo "dwi2tensor"
-if [ -f dt.mif ]; then
-    echo "dt.mif already exist... skipping"
-else
+if [ ! -f dt.mif ]; then
     time dwi2tensor -quiet dwi.mif -grad grad.b dt.mif 
 fi
 
 echo "tensor2FA"
-if [ -f fa.mif ]; then
-    echo "fa.mif already exist... skipping"
-else
+if [ ! -f fa.mif ]; then
     time tensor2FA -quiet dt.mif - | mrmult -quiet - brainmask.mif fa.mif
-    ret=$?
-    if [ ! $ret -eq 0 ]; then
-        echo $ret > finished
-        exit $ret
-    fi
 fi
 
-###################################################################################################
-
 echo "erode"
-if [ -f sf.mif ]; then
-    echo "sf.mif already exist... skipping"
-else
+if [ ! -f sf.mif ]; then
     time erode -quiet brainmask.mif -npass 3 - | mrmult -quiet fa.mif - - | threshold -quiet - -abs 0.7 sf.mif
 fi
 
 echo "estimate response function"
-if [ -f response.txt ]; then
-    echo "response.txt already exist... skipping"
-else
+if [ ! -f response.txt ]; then
     time estimate_response -quiet dwi.mif sf.mif -grad grad.b response.txt
-    ret=$?
-    if [ ! $ret -eq 0 ]; then
-        echo $ret > finished
-        exit $ret
-    fi
 fi
 
+echo "generating DT_STREAM"
+#mrtrix doc says streamtrack/DT_STREAM doesn't need grad.. but without it, it fails
+time streamtrack -quiet DT_STREAM dwi.mif output.DT_STREAM.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
 
-###################################################################################################
-# tensor tracking (DT_STREAM)
-
-if [ $DOTENSOR == "true" ] ; then
-    echo "generating DT_STREAM"
-    #mrtrix doc says streamtrack/DT_STREAM doesn't need grad.. but without it, it fails
-    time streamtrack -quiet DT_STREAM dwi.mif output.DT_STREAM.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
-    ret=$?
-    if [ ! $ret -eq 0 ]; then
-        echo $ret > finished
-        exit $ret
-    fi
-fi
-
-###################################################################################################
 # SD_PROB and SD_STREAM uses CSD lmax.N.mif (aka FOD?) (should take about 10 minutes to several hours - depending on lmax value) 
-
-outfile=lmax.mif
-if [ -f $outfile ]; then
-    echo "$outfile already exist... skipping"
-else
-    echo "computing lmax"
-    time csdeconv -quiet dwi.mif -grad grad.b response.txt -lmax $LMAX -mask brainmask.mif $outfile
-    ret=$?
-    if [ ! $ret -eq 0 ]; then
-        #curl -s -X POST -H "Content-Type: application/json" -d "{\"status\": \"failed\"}" ${SCA_PROGRESS_URL}.lmax > /dev/null
-        echo $ret > finished
-        exit $ret
-    fi
+echo "computing lmax"
+if [ ! -f lmax.mif ]; then
+    time csdeconv -quiet dwi.mif -grad grad.b response.txt -lmax $LMAX -mask brainmask.mif lmax.mif
 fi
 
-###################################################################################################
-# streamtrack  (SD_STREAM)
-if [ $DOSTREAM == "true" ] ; then
-    echo "generating SD_STREAM"
-    time streamtrack -quiet SD_STREAM lmax.mif output.SD_STREAM.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
-    ret=$?
-    if [ ! $ret -eq 0 ]; then
-        echo $ret > finished
-        exit $ret
-    fi
-fi
-curl -s -X POST -H "Content-Type: application/json" -d "{\"progress\": 1, \"status\": \"finished\"}" $progress_url > /dev/null
+echo "generating SD_STREAM"
+time streamtrack -quiet SD_STREAM lmax.mif output.SD_STREAM.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
 
-###################################################################################################
-# streamtrack  (SD_PROB)
-if [ $DOPROB == "true" ] ; then
-    echo "generating SD_PROB"
-    time streamtrack -quiet SD_PROB lmax.mif output.SD_PROB.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
-    ret=$?
-    if [ ! $ret -eq 0 ]; then
-        curl -s -X POST -H "Content-Type: application/json" -d "{\"status\": \"failed\"}" $progress_url > /dev/null
-        echo $ret > finished
-        exit $ret
-    fi
-fi
-curl -s -X POST -H "Content-Type: application/json" -d "{\"progress\": 1, \"status\": \"finished\"}" $progress_url > /dev/null
+echo "generating SD_PROB"
+time streamtrack -quiet SD_PROB lmax.mif output.SD_PROB.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
 
-###################################################################################################
-# convert various mif files to .nii.gz to generate neuro/dwi/recon (Diffusion Signal Voxel Reconstruction Model) data product
-#response.txt > same
 echo "creating neuro/dwi/recon datatype"
 mrconvert lmax.mif csd.nii.gz
 mrconvert fa.mif fa.nii.gz
@@ -222,7 +123,65 @@ mrconvert dt.mif dt.nii.gz
 mrconvert wm.mif whitematter.nii.gz
 mrconvert brainmask.mif brainmask.nii.gz
 
-echo "all done"
-echo 0 > finished
+echo "gathering infor for product.json"
+track_info output.SD_PROB.tck | ./info2json.py > SD_PROB.json
+track_info output.SD_STREAM.tck | ./info2json.py > SD_STREAM.json
+track_info output.DT_STREAM.tck | ./info2json.py > DT_STREAM.json
+./pull_form.py $(jq -r .dwi config.json) > forms.json
 
+echo "writing product.json"
+cat << EOF > product.json
+{
+    "meta": {
+        "dt_stream": {
+            "qform": $(jq .qform forms.json),
+            "sform": $(jq .sform forms.json),
+            "TractographyClass": "local",
+            "TractographyMethod": "deterministic",
+            "StepSizeUnits": "mm",
+            "StepSize": $(jq -r .step_size DT_STREAM.json),
+            "AngleCurvature": $(jq -r .min_curv DT_STREAM.json),
+            "SeedingMethod": "globalSeedNumber",
+            "SeedingNumberMethod": "totalStreamlinesNumber",
+            "TerminationCriterion": "leaveMask",
+            "TerminationCriterionTest": "binary"
+        },
+
+        "sd_stream": {
+            "qform": $(jq .qform forms.json),
+            "sform": $(jq .sform forms.json),
+            "TractographyClass": "local",
+            "TractographyMethod": "deterministic",
+            "StepSizeUnits": "mm",
+            "StepSize": $(jq -r .step_size SD_STREAM.json),
+            "AngleCurvature": $(jq -r .min_curv SD_STREAM.json),
+            "SeedingMethod": "globalSeedNumber",
+            "SeedingNumberMethod": "totalStreamlinesNumber",
+            "TerminationCriterion": "leaveMask",
+            "TerminationCriterionTest": "binary"
+        },
+
+        "sd_prob": {
+            "qform": $(jq .qform forms.json),
+            "sform": $(jq .sform forms.json),
+            "TractographyClass": "local",
+            "TractographyMethod": "probabilistic",
+            "StepSizeUnits": "mm",
+            "StepSize": $(jq -r .step_size SD_PROB.json),
+            "AngleCurvature": $(jq -r .min_curv SD_PROB.json),
+            "SeedingMethod": "globalSeedNumber",
+            "SeedingNumberMethod": "totalStreamlinesNumber",
+            "TerminationCriterion": "leaveMask",
+            "TerminationCriterionTest": "binary"
+        }
+    }, 
+    "track_info": {
+        "dt_stream": $(jq . DT_STREAM.json),
+        "sd_stream": $(jq . SD_STREAM.json),
+        "sd_prob": $(jq . SD_PROB.json)
+    }
+}
+EOF
+
+echo "all done"
 
