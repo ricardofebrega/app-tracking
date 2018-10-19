@@ -110,7 +110,7 @@ echo "gathering infor for product.json"
 track_info output.SD_PROB.tck | ./info2json.py > SD_PROB.json
 track_info output.SD_STREAM.tck | ./info2json.py > SD_STREAM.json
 track_info output.DT_STREAM.tck | ./info2json.py > DT_STREAM.json
-./pull_form.py $(jq -r .dwi config.json) > forms.json
+./pull_form.py $input_nii_gz > forms.json
 
 echo "writing product.json"
 cat << EOF > product.json
