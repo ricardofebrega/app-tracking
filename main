@@ -57,64 +57,46 @@ for bval in $bvals; do
 done
 
 echo "starting matlab to create wm.nii.gz"
-if [ ! -f wm.nii.gz ]; then
-    time matlab -nodisplay -nosplash -r make_wm_mask
-fi
+[ ! -f wm.nii.gz ] && time matlab -nodisplay -nosplash -r make_wm_mask
 
 echo "converting wm.nii.gz to wm.mif"
-if [ ! -f wm.mif ]; then
-    time mrconvert --quiet wm.nii.gz wm.mif
-fi
+[ ! -f wm.mif ] && time mrconvert --quiet wm.nii.gz wm.mif
 
 echo "converting dwi input to mif (should take a few minutes)"
-if [ ! -f dwi.mif ]; then
-    time mrconvert --quiet $input_nii_gz dwi.mif
-fi
+[ ! -f dwi.mif ] && time mrconvert --quiet $input_nii_gz dwi.mif
 
 ###################################################################################################
 
 echo "make brainmask from dwi data (about 18 minutes)"
-if [ ! -f brainmask.mif ]; then
-    time average -quiet dwi.mif -axis 3 - | threshold -quiet - - | median3D -quiet - - | median3D -quiet - brainmask.mif
-fi
+[ ! -f brainmask.mif ] && time average -quiet dwi.mif -axis 3 - | threshold -quiet - - | median3D -quiet - - | median3D -quiet - brainmask.mif
 
 ###################################################################################################
 
 echo "dwi2tensor"
-if [ ! -f dt.mif ]; then
-    time dwi2tensor -quiet dwi.mif -grad grad.b dt.mif 
-fi
+[ ! -f dt.mif ] && time dwi2tensor -quiet dwi.mif -grad grad.b dt.mif 
 
 echo "tensor2FA"
-if [ ! -f fa.mif ]; then
-    time tensor2FA -quiet dt.mif - | mrmult -quiet - brainmask.mif fa.mif
-fi
+[ ! -f fa.mif ] && time tensor2FA -quiet dt.mif - | mrmult -quiet - brainmask.mif fa.mif
 
 echo "erode"
-if [ ! -f sf.mif ]; then
-    time erode -quiet brainmask.mif -npass 3 - | mrmult -quiet fa.mif - - | threshold -quiet - -abs 0.7 sf.mif
-fi
+[ ! -f sf.mif ] && time erode -quiet brainmask.mif -npass 3 - | mrmult -quiet fa.mif - - | threshold -quiet - -abs 0.7 sf.mif
 
 echo "estimate response function"
-if [ ! -f response.txt ]; then
-    time estimate_response -quiet dwi.mif sf.mif -grad grad.b response.txt
-fi
+[ ! -f response.txt ] && time estimate_response -quiet dwi.mif sf.mif -grad grad.b response.txt
 
 echo "generating DT_STREAM"
 #mrtrix doc says streamtrack/DT_STREAM doesn't need grad.. but without it, it fails
-time streamtrack -quiet DT_STREAM dwi.mif output.DT_STREAM.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
+[ ! -f output.DT_STREAM.tck ] && time streamtrack -quiet DT_STREAM dwi.mif output.DT_STREAM.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
 
 # SD_PROB and SD_STREAM uses CSD lmax.N.mif (aka FOD?) (should take about 10 minutes to several hours - depending on lmax value) 
 echo "computing lmax"
-if [ ! -f lmax.mif ]; then
-    time csdeconv -quiet dwi.mif -grad grad.b response.txt -lmax $LMAX -mask brainmask.mif lmax.mif
-fi
+[ ! -f lmax.mif ] && time csdeconv -quiet dwi.mif -grad grad.b response.txt -lmax $LMAX -mask brainmask.mif lmax.mif
 
 echo "generating SD_STREAM"
-time streamtrack -quiet SD_STREAM lmax.mif output.SD_STREAM.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
+[ ! -f output.SD_STREAM.tck ] && time streamtrack -quiet SD_STREAM lmax.mif output.SD_STREAM.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
 
 echo "generating SD_PROB"
-time streamtrack -quiet SD_PROB lmax.mif output.SD_PROB.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
+[ ! -f output.SD_PROB.tck ] && time streamtrack -quiet SD_PROB lmax.mif output.SD_PROB.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
 
 echo "creating neuro/dwi/recon datatype"
 rm -f csd.nii.gz fa.nii.gz dt.nii.gz whitematter.nii.gz brainmask.nii.gz
@@ -125,9 +107,9 @@ mrconvert wm.mif whitematter.nii.gz
 mrconvert brainmask.mif brainmask.nii.gz
 
 echo "gathering infor for product.json"
-singularity exec /N/soft/rhel7/mrtrix/0.2.12/soichih_mrtrix_0.2.12-2017-06-19-380a22321210.img /usr/lib/mrtrix/bin/track_info output.SD_PROB.tck | ./info2json.py > SD_PROB.json
-singularity exec /N/soft/rhel7/mrtrix/0.2.12/soichih_mrtrix_0.2.12-2017-06-19-380a22321210.img /usr/lib/mrtrix/bin/track_info output.SD_STREAM.tck | ./info2json.py > SD_STREAM.json
-singularity exec /N/soft/rhel7/mrtrix/0.2.12/soichih_mrtrix_0.2.12-2017-06-19-380a22321210.img /usr/lib/mrtrix/bin/track_info output.DT_STREAM.tck | ./info2json.py > DT_STREAM.json
+track_info output.SD_PROB.tck | ./info2json.py > SD_PROB.json
+track_info output.SD_STREAM.tck | ./info2json.py > SD_STREAM.json
+track_info output.DT_STREAM.tck | ./info2json.py > DT_STREAM.json
 ./pull_form.py $(jq -r .dwi config.json) > forms.json
 
 echo "writing product.json"
