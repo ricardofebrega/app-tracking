@@ -117,6 +117,7 @@ echo "generating SD_PROB"
 time streamtrack -quiet SD_PROB lmax.mif output.SD_PROB.tck -seed wm.mif -mask wm.mif -grad grad.b -number $NUMFIBERS -maxnum $MAXNUMFIBERSATTEMPTED
 
 echo "creating neuro/dwi/recon datatype"
+rm -f csd.nii.gz fa.nii.gz dt.nii.gz whitematter.nii.gz brainmask.nii.gz
 mrconvert lmax.mif csd.nii.gz
 mrconvert fa.mif fa.nii.gz
 mrconvert dt.mif dt.nii.gz
