@@ -149,6 +149,9 @@ cat << EOF > product.json
             "StepSize": $(jq -r .step_size SD_PROB.json),
             "AngleCurvature": $(jq -r .min_curv SD_PROB.json)
         }
+    },
+    "recon": {
+        "todo": true
     }
 }
 EOF
