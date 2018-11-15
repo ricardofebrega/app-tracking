@@ -79,7 +79,7 @@ echo "tensor2FA"
 [ ! -f fa.mif ] && time tensor2FA -quiet dt.mif - | mrmult -quiet - brainmask.mif fa.mif
 
 echo "erode"
-[ ! -f sf.mif ] && time erode -quiet brainmask.mif -npass 3 - | mrmult -quiet fa.mif - - | threshold -quiet - -abs 0.7 sf.mif
+[ ! -f sf.mif ] && time erode -quiet wm.mif -npass 3 - | mrmult -quiet fa.mif - - | threshold -quiet - -abs 0.7 sf.mif
 
 echo "estimate response function"
 [ ! -f response.txt ] && time estimate_response -quiet dwi.mif sf.mif -grad grad.b response.txt
