@@ -32,7 +32,7 @@ LMAX=`jq -r '.lmax' config.json`
 
 #TODO - validate other fields?
 if [[ $LMAX == "null" || -z $LMAX ]]; then
-    echo "lmax is empty.. calculating max lmax to use from $BVALS"
+    echo "lmax is empty... calculating max lmax to use from $BVALS"
 	LMAX=`./calculatelmax.py $BVALS`
 fi
 echo "Using LMAX: $LMAX"
@@ -58,12 +58,19 @@ done
 
 echo "starting matlab to create wm.nii.gz"
 [ ! -f wm.nii.gz ] && time matlab -nodisplay -nosplash -r make_wm_mask
-
-echo "converting wm.nii.gz to wm.mif"
-[ ! -f wm.mif ] && time mrconvert --quiet wm.nii.gz wm.mif
+# new way avoiding calling matlab: [ ! -f wm.nii.gz ] && time wm_from_aparc_aseg.py
 
 echo "converting dwi input to mif (should take a few minutes)"
 [ ! -f dwi.mif ] && time mrconvert --quiet $input_nii_gz dwi.mif
+
+echo "extract b0 images, and compute their average to use as DWI reference"
+[ ! -f b0.nii.gz ] && time dwiextract dwi.mif - -bzero | mrmath - mean - -axis 3 | mrconvert --quiet - b0.nii.gz 
+
+echo "converting wm.nii.gz from t1- to dwi-space"
+[ ! -f wm_dwi.nii.gz ] && time flirt -in wm.nii.gz -ref b0.nii.gz -out wm_dwi.nii.gz -interp nearestneighbour
+    
+echo "converting wm.nii.gz to wm.mif"
+[ ! -f wm.mif ] && time mrconvert --quiet wm_dwi.nii.gz wm.mif
 
 ###################################################################################################
 
