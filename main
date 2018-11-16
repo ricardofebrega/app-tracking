@@ -56,18 +56,16 @@ for bval in $bvals; do
     i=$((i+1))
 done
 
-echo "starting matlab to create wm.nii.gz"
-# [ ! -f wm.nii.gz ] && time matlab -nodisplay -nosplash -r make_wm_mask
-# new way avoiding calling matlab: 
-freesurfer=`jq -r '.freesurfer' config.json`
-mri_convert ${freesurfer}/mri/aparc+aseg.mgz aparc+aseg.nii.gz #LAS
-[ ! -f wm_t1.nii.gz ] && time singularity docker exec -e docker://brainlife/dipy:0.14.1 ./wm_from_aparc_aseg.py aparc+aseg.nii.gz wm_t1.nii.gz
-
 echo "converting dwi input to mif (should take a few minutes)"
 [ ! -f dwi.mif ] && time mrconvert --quiet $input_nii_gz dwi.mif -grad grad.b
 
 echo "extract b0 images, and compute their average to use as DWI reference"
 [ ! -f b0.nii.gz ] && time dwiextract dwi.mif - -bzero | mrmath - mean - -axis 3 | mrconvert --quiet - b0.nii.gz 
+
+echo "create wm.nii.gz"
+freesurfer=`jq -r '.freesurfer' config.json`
+[ ! -f convert aparc+aseg.nii.gz ] && time mri_convert ${freesurfer}/mri/aparc+aseg.mgz aparc+aseg.nii.gz #LAS
+[ ! -f wm_t1.nii.gz ] && time singularity docker exec -e docker://brainlife/dipy:0.14.1 ./wm_from_aparc_aseg.py aparc+aseg.nii.gz wm_t1.nii.gz
 
 echo "converting wm.nii.gz from t1- to dwi-space"
 [ ! -f wm_dwi.nii.gz ] && time flirt -in wm_t1.nii.gz -ref b0.nii.gz -out wm_dwi.nii.gz -interp nearestneighbour
