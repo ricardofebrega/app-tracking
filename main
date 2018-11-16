@@ -57,10 +57,10 @@ for bval in $bvals; do
 done
 
 echo "converting dwi input to mif (should take a few minutes)"
-[ ! -f dwi.mif ] && time mrconvert --quiet $input_nii_gz dwi.mif -grad grad.b
+[ ! -f dwi.mif ] && time mrconvert -quiet $input_nii_gz dwi.mif -grad grad.b
 
 echo "extract b0 images, and compute their average to use as DWI reference"
-[ ! -f b0.nii.gz ] && time dwiextract dwi.mif - -bzero | mrmath - mean - -axis 3 | mrconvert --quiet - b0.nii.gz 
+[ ! -f b0.nii.gz ] && time dwiextract dwi.mif - -bzero | mrmath - mean - -axis 3 | mrconvert -quiet - b0.nii.gz 
 
 echo "create wm.nii.gz"
 freesurfer=`jq -r '.freesurfer' config.json`
@@ -71,7 +71,7 @@ echo "converting wm.nii.gz from t1- to dwi-space"
 [ ! -f wm_dwi.nii.gz ] && time flirt -in wm_t1.nii.gz -ref b0.nii.gz -out wm_dwi.nii.gz -interp nearestneighbour
     
 echo "converting wm.nii.gz to wm.mif"
-[ ! -f wm.mif ] && time mrconvert --quiet wm_dwi.nii.gz wm.mif
+[ ! -f wm.mif ] && time mrconvert -quiet wm_dwi.nii.gz wm.mif
 
 ###################################################################################################
 
