@@ -57,7 +57,7 @@ for bval in $bvals; do
 done
 
 echo "converting dwi input to mif (should take a few minutes)"
-[ ! -f dwi.mif ] && time mrconvert -quiet $input_nii_gz dwi.mif -grad grad.b
+[ ! -f dwi.mif ] && time mrconvert $input_nii_gz dwi.mif -grad grad.b
 
 echo "extract b0 images, and compute their average to use as DWI reference"
 [ ! -f b0.nii.gz ] && time dwiextract dwi.mif - -bzero | mrmath - mean - -axis 3 | mrconvert -quiet - b0.nii.gz 
