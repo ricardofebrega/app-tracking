@@ -19,8 +19,6 @@ def wm_from_aparc_aseg(aparc_aseg_src, wm_mask_out):
 
     nib.save(nib.Nifti1Image(wm, aff), wm_mask_out)
 
-
-
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
