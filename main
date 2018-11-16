@@ -61,7 +61,7 @@ echo "starting matlab to create wm.nii.gz"
 # new way avoiding calling matlab: [ ! -f wm.nii.gz ] && time wm_from_aparc_aseg.py
 
 echo "converting dwi input to mif (should take a few minutes)"
-[ ! -f dwi.mif ] && time mrconvert --quiet $input_nii_gz dwi.mif
+[ ! -f dwi.mif ] && time mrconvert --quiet $input_nii_gz dwi.mif -grad grad.b
 
 echo "extract b0 images, and compute their average to use as DWI reference"
 [ ! -f b0.nii.gz ] && time dwiextract dwi.mif - -bzero | mrmath - mean - -axis 3 | mrconvert --quiet - b0.nii.gz 
