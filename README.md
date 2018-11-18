@@ -9,6 +9,8 @@ This service runs mrtrix tracking using SD_PROB, SD_STREAM, and DT_STREAM algori
 - Brent McPherson (bcmcpher@iu.edu)
 - Lindsey Kitchell (kitchell@iu.edu)
 - Soichi Hayashi (hayashis@iu.edu)
+- Franco Pestilli (frakkopesto@gmail.com)
+- Paolo Avesani (avesani@fbk.eu)
 
 ### Project director
 - Franco Pestilli (franpest@indiana.edu)
