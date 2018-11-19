@@ -71,7 +71,7 @@ echo "extract b0 images, and compute their average to use as DWI reference"
 echo "create wm.nii.gz"
 freesurfer=`jq -r '.freesurfer' config.json`
 [ ! -f aparc+aseg.nii.gz ] && time mri_convert ${freesurfer}/mri/aparc+aseg.mgz aparc+aseg.nii.gz
-[ ! -f wm_t1.nii.gz ] && time singularity exec -e docker://brainlife/dipy:0.14.1 ./wm_from_aparc_aseg.py aparc+aseg.nii.gz wm_t1.nii.gz
+[ ! -f wm_t1.nii.gz ] && time SINGULARITYENV_PYTHONNOUSERSITE=true singularity exec -e docker://brainlife/dipy:0.14.1 ./wm_from_aparc_aseg.py aparc+aseg.nii.gz wm_t1.nii.gz
 
 echo "converting wm.nii.gz from t1- to dwi-space"
 [ ! -f wm_dwi.nii.gz ] && time flirt -in wm_t1.nii.gz -ref b0.nii.gz -out wm_dwi.nii.gz -interp nearestneighbour
