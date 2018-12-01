@@ -3,7 +3,7 @@
 
 # app-tracking
 
-This service runs mrtrix tracking using SD_PROB, SD_STREAM, and DT_STREAM algorithms. It generates 3 separate track output for each algorithms.
+This service runs mrtrix tracking using SD_PROB, SD_STREAM, and DT_STREAM algorithms. It generates 3 separate whole brain tracking output for each algorithms.
 
 ### Authors
 - Brent McPherson (bcmcpher@iu.edu)
