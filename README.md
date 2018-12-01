@@ -66,13 +66,19 @@ bl dataset download 5a065cc75ab38300be518f51 && mv 5a065cc75ab38300be518f51 inpu
 
 ## Output
 
-All output files will be generated under the current working directory (pwd). The main output of this App is a file called `output.mat`. This file contains following object.
+The output for App is composed by two [brainlife.io/DataTypes](brainlife.io/docs/user/datatypes) and four datasets. 
 
 ```
-ADD
+brainlife.io DataTypes: 
+    - recon
+    - track/tck
+    
+datasets:
+    - recon
+    - track/tck:dt_stream
+    - track/tck:sd_stream
+    - track/tck:sd_prob
 ```
-
-`output.XXX` contains XXX.
 
 #### Product.json
 
