@@ -118,7 +118,7 @@ mrconvert lmax.mif csd.nii.gz
 mrconvert fa.mif fa.nii.gz
 mrconvert dt.mif dt.nii.gz
 mrconvert wm.mif whitematter.nii.gz
-mrconvert brainmask.mif brainmask.nii.gz
+mrconvert -datatype Int8 brainmask.mif brainmask.nii.gz
 
 echo "gathering infor for product.json"
 track_info output.SD_PROB.tck | ./info2json.py > SD_PROB.json
