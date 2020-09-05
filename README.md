@@ -66,7 +66,7 @@ bl dataset download 5a065cc75ab38300be518f51 && mv 5a065cc75ab38300be518f51 inpu
 
 ## Output
 
-The output for App is composed by two [brainlife.io/DataTypes](brainlife.io/docs/user/datatypes) and four datasets. 
+The output for App is composed by two [brainlife.io/datatypes](brainlife.io/docs/user/datatypes) and four datasets. 
 
 ```
 brainlife.io DataTypes: 
